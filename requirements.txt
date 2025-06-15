@@ -1,0 +1,25 @@
+# Core dependencies
+fastapi==0.110.0
+uvicorn==0.24.0
+pydantic==2.6.0
+python-multipart==0.0.7
+python-dotenv==1.0.0
+Pillow>=9.4.0
+
+# Google Cloud dependencies
+google-cloud-documentai==2.25.0
+google-cloud-vision==3.4.5
+google-cloud-storage==2.13.0
+google-cloud-aiplatform==1.39.0
+google-cloud-discoveryengine==0.11.11
+google-cloud-firestore==2.13.1
+google-cloud-pubsub==2.18.4
+functions-framework==3.5.0
+
+# ADK
+google-generativeai==0.3.2
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+httpx==0.25.1

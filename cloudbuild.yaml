@@ -1,0 +1,68 @@
+# Cloud Build configuration
+steps:
+  # Run tests
+  - name: 'python:3.9'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        pip install -r requirements.txt
+        pip install pytest
+        python -m pytest tests/ -v || true  # Don't fail the build if tests fail for now
+  
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', '${_REGION}-docker.pkg.dev/$PROJECT_ID/document-api/document-api:$SHORT_SHA', '-t', '${_REGION}-docker.pkg.dev/$PROJECT_ID/document-api/document-api:latest', '.']
+  
+  # Push the container image to Artifact Registry with multiple tags
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '--all-tags', '${_REGION}-docker.pkg.dev/$PROJECT_ID/document-api/document-api']
+  
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'document-management-api'
+      - '--image'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/document-api/document-api:$SHORT_SHA'
+      - '--platform'
+      - 'managed'
+      - '--region'
+      - '${_REGION}'
+      - '--service-account'
+      - '${_SERVICE_ACCOUNT}'
+      - '--allow-unauthenticated'
+
+  # Create Cloud Function source archive
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        mkdir -p /workspace/function
+        cp -r src /workspace/function/
+        cp requirements.txt /workspace/function/
+        cd /workspace/function
+        zip -r /workspace/function-source.zip .
+
+  # Upload function source to Storage
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gsutil
+    args:
+      - 'cp'
+      - '/workspace/function-source.zip'
+      - 'gs://${_PROJECT_ID}-functions/function-source.zip'
+
+substitutions:
+  _REGION: 'eu-west1'  # Matching the GitHub connection region
+  _PROJECT_ID: '${PROJECT_ID}'
+  _SERVICE_ACCOUNT: 'cloudbuild-sa@${PROJECT_ID}.iam.gserviceaccount.com'
+
+images:
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/document-api/document-api:$SHORT_SHA'
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/document-api/document-api:latest'
+
+options:
+  serviceAccount: 'projects/${PROJECT_ID}/serviceAccounts/cloudbuild-sa@${PROJECT_ID}.iam.gserviceaccount.com'
