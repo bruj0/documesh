@@ -58,7 +58,7 @@ steps:
 substitutions:
   _REGION: 'eu-west1'  # Matching the GitHub connection region
   _PROJECT_ID: '${PROJECT_ID}'
-  _SERVICE_ACCOUNT: 'cloudbuild-sa@${PROJECT_ID}.iam.gserviceaccount.com'
+# _SERVICE_ACCOUNT: 'cloudbuild-sa@${PROJECT_ID}.iam.gserviceaccount.com'
 
 images:
   - '${_REGION}-docker.pkg.dev/$PROJECT_ID/document-api/document-api:$SHORT_SHA'

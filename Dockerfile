@@ -17,9 +17,7 @@ COPY . ./
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
-    PORT=8080 \
-    GOOGLE_APPLICATION_CREDENTIALS=/app/credentials.json
-
+    PORT=8080 
 # Expose the port
 EXPOSE 8080
 
