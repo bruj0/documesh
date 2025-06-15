@@ -18,6 +18,7 @@ resource "google_service_account" "cloudbuild_sa" {
 # resource "google_project_iam_member" "terraform_deployer_roles" {
 #   for_each = toset([
 #     "roles/serviceusage.serviceUsageAdmin",
+#     "roles/cloudbuild.build.editor",    # Required to create and manage Cloud Build triggers
 #     "roles/storage.admin",
 #     "roles/documentai.admin",
 #     "roles/aiplatform.admin",
@@ -27,10 +28,11 @@ resource "google_service_account" "cloudbuild_sa" {
 #     "roles/cloudfunctions.admin",
 #     "roles/run.admin",
 #     "roles/iam.serviceAccountUser",
+#     "roles/iam.serviceAccountAdmin",           # For creating and managing service accounts
 #     "roles/resourcemanager.projectIamAdmin",
 #     "roles/artifactregistry.admin"
 #   ])
-  
+
 #   project = var.project_id
 #   role    = each.key
 #   member  = "serviceAccount:${google_service_account.terraform_deployer.email}"
@@ -41,15 +43,14 @@ resource "google_project_iam_member" "cloudbuild_sa_roles" {
   for_each = toset([
     "roles/artifactregistry.admin",
     "roles/cloudbuild.builds.builder",
-    "roles/cloudbuild.integrations.creator", # For GitHub integrations
-    "roles/secretmanager.secretAccessor",    # For accessing GitHub tokens if needed
+    "roles/secretmanager.secretAccessor", # For accessing GitHub tokens if needed
     "roles/cloudkms.cryptoKeyEncrypterDecrypter",
     "roles/storage.admin",
     "roles/run.admin",
     "roles/cloudfunctions.admin",
     "roles/iam.serviceAccountUser"
   ])
-  
+
   project = var.project_id
   role    = each.key
   member  = "serviceAccount:${google_service_account.cloudbuild_sa.email}"

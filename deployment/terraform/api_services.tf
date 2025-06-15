@@ -4,7 +4,7 @@
 resource "google_project_service" "services" {
   for_each = toset([
     "documentai.googleapis.com",
-    "vision.googleapis.com", 
+    "vision.googleapis.com",
     "aiplatform.googleapis.com",
     "discoveryengine.googleapis.com",
     "storage.googleapis.com",
@@ -13,10 +13,11 @@ resource "google_project_service" "services" {
     "run.googleapis.com",
     "pubsub.googleapis.com",
     "discoveryengine.googleapis.com",
-    "retail.googleapis.com",  # Required for some Discovery Engine operations
-    "artifactregistry.googleapis.com"  # Required for Artifact Registry
+    "retail.googleapis.com",           # Required for some Discovery Engine operations
+    "artifactregistry.googleapis.com", # Required for Artifact Registry
+    "cloudbuild.googleapis.com"        # Required for Cloud Build API
   ])
-  
-  service = each.key
+
+  service            = each.key
   disable_on_destroy = false
 }

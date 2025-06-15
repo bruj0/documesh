@@ -6,19 +6,19 @@ resource "google_storage_bucket" "cloudbuild_artifacts" {
   name                        = "${var.project_id}-cloudbuild-artifacts"
   location                    = var.region
   uniform_bucket_level_access = true
-  force_destroy              = true  # Allow deleting non-empty buckets (use with caution)
-  
+  force_destroy               = true # Allow deleting non-empty buckets (use with caution)
+
   versioning {
-    enabled = true  # Keep versions of build artifacts
+    enabled = true # Keep versions of build artifacts
   }
   lifecycle {
     create_before_destroy = false
-    prevent_destroy = false
-    ignore_changes = []
+    prevent_destroy       = false
+    ignore_changes        = []
   }
   lifecycle_rule {
     condition {
-      age = 30  # days
+      age = 30 # days
     }
     action {
       type = "Delete"
@@ -32,21 +32,21 @@ resource "google_storage_bucket" "function_source" {
   name                        = "${var.project_id}-functions"
   location                    = var.region
   uniform_bucket_level_access = true
-  force_destroy              = true
-  
+  force_destroy               = true
+
   versioning {
     enabled = true
   }
-  
+
   lifecycle {
     create_before_destroy = false
-    prevent_destroy = false
-    ignore_changes = []
+    prevent_destroy       = false
+    ignore_changes        = []
   }
 
   lifecycle_rule {
     condition {
-      age = 60  # days
+      age = 60 # days
     }
     action {
       type = "Delete"

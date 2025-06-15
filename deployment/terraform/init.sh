@@ -61,6 +61,7 @@ ROLES=(
     "roles/cloudfunctions.admin"               # For Cloud Functions
     "roles/run.admin"                          # For Cloud Run services
     "roles/iam.serviceAccountUser"             # For services using other service accounts
+    "roles/iam.serviceAccountAdmin"            # For creating and managing service accounts
     "roles/resourcemanager.projectIamAdmin"    # For setting IAM policies
     "roles/artifactregistry.admin"             # For container image repositories
 )
