@@ -63,3 +63,5 @@ substitutions:
 images:
   - '${_REGION}-docker.pkg.dev/$PROJECT_ID/document-api/document-api:$SHORT_SHA'
   - '${_REGION}-docker.pkg.dev/$PROJECT_ID/document-api/document-api:latest'
+options:
+  logging: CLOUD_LOGGING_ONLY
