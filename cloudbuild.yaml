@@ -63,6 +63,3 @@ substitutions:
 images:
   - '${_REGION}-docker.pkg.dev/$PROJECT_ID/document-api/document-api:$SHORT_SHA'
   - '${_REGION}-docker.pkg.dev/$PROJECT_ID/document-api/document-api:latest'
-
-options:
-  serviceAccount: 'projects/${PROJECT_ID}/serviceAccounts/cloudbuild-sa@${PROJECT_ID}.iam.gserviceaccount.com'
