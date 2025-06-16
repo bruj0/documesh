@@ -13,6 +13,7 @@ resource "google_cloud_run_service" "api_service" {
     }
 
     spec {
+      service_account_name = google_service_account.api_service_sa.email
 
       containers {
         image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.document_api_repo.repository_id}/document-api:latest"

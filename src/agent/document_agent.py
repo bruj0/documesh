@@ -6,7 +6,7 @@ from typing import Dict, List, Any, Optional
 
 # Import Google ADK components
 from google.adk.agents import Agent
-from google.adk.tools import Tool
+from google.adk.tools import FunctionTool
 
 # Import local modules
 from ..search import similarity
@@ -21,29 +21,21 @@ class DocumentSearchAgent:
     def __init__(self):
         """Initialize the document search agent."""
         # Define custom tools
-        self.search_tool = Tool(
-            name="search_documents",
-            description="Search for technical documents by text query",
-            function=self._search_documents
-        )
+        self.search_tool = FunctionTool(self._search_documents)
+        self.search_tool.name = "search_documents"
+        self.search_tool.description = "Search for technical documents by text query"
         
-        self.similar_docs_tool = Tool(
-            name="find_similar_documents",
-            description="Find documents similar to a specified document",
-            function=self._find_similar_documents
-        )
+        self.similar_docs_tool = FunctionTool(self._find_similar_documents)
+        self.similar_docs_tool.name = "find_similar_documents"
+        self.similar_docs_tool.description = "Find documents similar to a specified document"
         
-        self.extract_info_tool = Tool(
-            name="extract_document_information",
-            description="Extract specific information from a document",
-            function=self._extract_information
-        )
+        self.extract_info_tool = FunctionTool(self._extract_information)
+        self.extract_info_tool.name = "extract_document_information"
+        self.extract_info_tool.description = "Extract specific information from a document"
         
-        self.summarize_tool = Tool(
-            name="summarize_document",
-            description="Generate a summary of a document",
-            function=self._summarize_document
-        )
+        self.summarize_tool = FunctionTool(self._summarize_document)
+        self.summarize_tool.name = "summarize_document"
+        self.summarize_tool.description = "Generate a summary of a document"
         
         # Initialize the agent with tools
         self.agent = Agent(
