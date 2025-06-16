@@ -1,7 +1,7 @@
 # Cloud Build configuration
 steps:
   # Run tests
-  - name: 'python:3.9'
+  - name: 'python:3.12'
     entrypoint: bash
     args:
       - '-c'
