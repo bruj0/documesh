@@ -1,6 +1,7 @@
 # Cloud Build configuration
 steps:
-  - name: 'Run tests'
+  # Run tests
+  - name: 'python:3.9'
     entrypoint: bash
     args:
       - '-c'
@@ -9,13 +10,16 @@ steps:
         pip install pytest
         python -m pytest tests/ -v || true  # Don't fail the build if tests fail for now
   
-  - name: 'Build the container image'
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-t', '${_REGION}-docker.pkg.dev/$PROJECT_ID/document-api/document-api:$SHORT_SHA', '-t', '${_REGION}-docker.pkg.dev/$PROJECT_ID/document-api/document-api:latest', '.']
   
-  - name: 'Push the container image to Artifact Registry with multiple tags'
+  # Push the container image to Artifact Registry with multiple tags
+  - name: 'gcr.io/cloud-builders/docker'
     args: ['push', '--all-tags', '${_REGION}-docker.pkg.dev/$PROJECT_ID/document-api/document-api']
   
-  - name: 'Deploy to Cloud Run'
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
       - 'run'
@@ -31,8 +35,8 @@ steps:
       - '${_SERVICE_ACCOUNT}'
       - '--allow-unauthenticated'
 
-  # 
-  - name: 'Create Cloud Function source archive'
+  # Create Cloud Function source archive
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: bash
     args:
       - '-c'
@@ -43,7 +47,8 @@ steps:
         cd /workspace/function
         zip -r /workspace/function-source.zip .
 
-  - name: 'Upload function source to Storage'
+  # Upload function source to Storage
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gsutil
     args:
       - 'cp'
