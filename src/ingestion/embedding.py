@@ -7,16 +7,14 @@ import os
 from google.cloud import aiplatform
 from vertexai.language_models import TextEmbeddingModel
 from vertexai.vision_models import ImageTextModel, Image
+from google.genai.types import EmbedContentConfig
+from google.genai import Client
 
 # Configure environment
-PROJECT_ID = os.environ.get("PROJECT_ID", "your-project-id")
+PROJECT_ID = os.environ.get("PROJECT_ID","hacker2025-team-5-dev")
 LOCATION = os.environ.get("LOCATION", "us-central1")
-TEXT_EMBEDDING_MODEL = os.environ.get("TEXT_EMBEDDING_MODEL", "textembedding-gecko@latest")
-MULTIMODAL_MODEL = os.environ.get("MULTIMODAL_MODEL", "multimodalembedding@latest")
-
-# Initialize Vertex AI
-aiplatform.init(project=PROJECT_ID, location=LOCATION)
-
+TEXT_EMBEDDING_MODEL = os.environ.get("TEXT_EMBEDDING_MODEL","gemini-embedding-001")
+MULTIMODAL_MODEL = os.environ.get("MULTIMODAL_MODEL")
 
 def generate_text_embedding(text: str) -> List[float]:
     """
@@ -28,23 +26,20 @@ def generate_text_embedding(text: str) -> List[float]:
     Returns:
         List of float values representing the embedding vector
     """
-    # Initialize text embedding model
-    model = TextEmbeddingModel.from_pretrained(TEXT_EMBEDDING_MODEL)
+    print(PROJECT_ID)
+    print(LOCATION)
+    client = Client(vertexai = True, project = PROJECT_ID, location = LOCATION)
+    response = client.models.embed_content(
+        model= TEXT_EMBEDDING_MODEL,
+        contents = text,
+        config=EmbedContentConfig(
+         task_type="RETRIEVAL_DOCUMENT",  # Optional
+         output_dimensionality=3072,  # Optional
+        #  title="Driver's License",  # Optional
+        ),
+    )
     
-    # For long texts, we need to split and combine
-    # This is a simplified implementation - production would handle long text better
-    if len(text) > 3000:
-        # Truncate text if too long
-        text = text[:3000]
-    
-    # Generate embedding
-    embeddings = model.get_embeddings([text])
-    
-    if embeddings and embeddings[0].values:
-        return embeddings[0].values
-    
-    # Return empty vector if failed
-    return []
+    print(response)
 
 
 def generate_visual_embedding(image_content: bytes) -> List[float]:
