@@ -6,7 +6,7 @@ import os
 
 from google.cloud import aiplatform
 from vertexai.language_models import TextEmbeddingModel
-from vertexai.vision_models import ImageTextModel, Image
+from vertexai.vision_models import ImageTextModel, Image, MultiModalEmbeddingModel
 from google.genai.types import EmbedContentConfig
 from google.genai import Client
 
@@ -14,7 +14,32 @@ from google.genai import Client
 PROJECT_ID = os.environ.get("PROJECT_ID","hacker2025-team-5-dev")
 LOCATION = os.environ.get("LOCATION", "us-central1")
 TEXT_EMBEDDING_MODEL = os.environ.get("TEXT_EMBEDDING_MODEL","gemini-embedding-001")
-MULTIMODAL_MODEL = os.environ.get("MULTIMODAL_MODEL")
+# MULTIMODAL_MODEL = os.environ.get("MULTIMODAL_MODEL","gemini-vision-001")
+
+# import vertexai
+
+# from vertexai.vision_models import Image, MultiModalEmbeddingModel
+
+# # TODO(developer): Update & uncomment line below
+# # PROJECT_ID = "your-project-id"
+# vertexai.init(project=PROJECT_ID, location="us-central1")
+
+# # TODO(developer): Try different dimenions: 128, 256, 512, 1408
+# embedding_dimension = 128
+
+# model = MultiModalEmbeddingModel.from_pretrained("imagetextmodel@001")
+# image = Image.load_from_file(
+#     "gs://cloud-samples-data/vertex-ai/llm/prompts/landmark1.png"
+# )
+
+# embeddings = model.get_embeddings(
+#     image=image,
+#     contextual_text="Colosseum",
+#     dimension=embedding_dimension,
+# )
+
+# print(f"Image Embedding: {embeddings.image_embedding}")
+# print(f"Text Embedding: {embeddings.text_embedding}")
 
 def generate_text_embedding(text: str) -> List[float]:
     """
@@ -61,7 +86,7 @@ def generate_visual_embedding(image_content: bytes) -> List[float]:
         
         # Use multimodal model to generate embedding
         # Note: This is simplified and would need to be adapted to your specific model
-        model = ImageTextModel.from_pretrained(MULTIMODAL_MODEL)
+        model = MultiModalEmbeddingModel.from_pretrained("multimodalembedding@001")
         embedding_response = model.get_embeddings(image=image)
         
         # Extract embedding values

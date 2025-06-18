@@ -39,36 +39,53 @@ def extract_diagrams_from_pdf(pdf_content: bytes) -> List[Dict[str, Any]]:
     # For now, we'll simulate finding diagrams on pages 1 and 2
     
     # This would be replaced with actual image extraction from PDF
-    mock_diagram1 = {
-        "image_content": pdf_content[:1000],  # First 1000 bytes as mock image
-        "page": 1,
-        "bbox": {
-            "x1": 0.1,
-            "y1": 0.2,
-            "x2": 0.8,
-            "y2": 0.7
-        }
-    }
+    # mock_diagram1 = {
+    #     "image_content": pdf_content[:1000],  # First 1000 bytes as mock image
+    #     "page": 1,
+    #     "bbox": {
+    #         "x1": 0.1,
+    #         "y1": 0.2,
+    #         "x2": 0.8,
+    #         "y2": 0.7
+    #     }
+    # }
     
-    mock_diagram2 = {
-        "image_content": pdf_content[1000:2000],  # Next 1000 bytes as mock image
-        "page": 2,
-        "bbox": {
-            "x1": 0.2,
-            "y1": 0.3,
-            "x2": 0.9,
-            "y2": 0.8
-        }
-    }
+    # mock_diagram2 = {
+    #     "image_content": pdf_content[1000:2000],  # Next 1000 bytes as mock image
+    #     "page": 2,
+    #     "bbox": {
+    #         "x1": 0.2,
+    #         "y1": 0.3,
+    #         "x2": 0.9,
+    #         "y2": 0.8
+    #     }
+    # }
     
-    diagrams.append(mock_diagram1)
-    diagrams.append(mock_diagram2)
+    # diagrams.append(mock_diagram1)
+    # diagrams.append(mock_diagram2)
+
+    # # Now we will replace the mock diagrams with actual processing
+    for diagram in diagrams:
+        # Convert the mock image content to a Vision Image object
+        image = vision.Image(content=diagram["image_content"])
+        
+        # Perform object detection
+        response = vision_client.object_localization(image=image)
+        
+        if response.error.message:
+            raise Exception(f"Error in object localization: {response.error.message}")
+        
+        # Process detected objects to identify diagrams
+        objects = response.localized_object_annotations
+        
+        # Identify diagrams in the detected objects
+        identified_diagrams = identify_diagrams(objects, None)
     
     return diagrams
 
 
 def identify_diagrams(
-    objects: List[vision.LocalizedObjectAnnotation], 
+    objects: List[vision.LocalizedObjectAnnotation],
     text_annotation: vision.TextAnnotation
 ) -> List[Dict[str, Any]]:
     """
@@ -79,19 +96,48 @@ def identify_diagrams(
         text_annotation: Text detected in the image
     
     Returns:
-        List of dictionaries containing diagram information
+        List of dictionaries containing diagram information including:
+        - bbox: Bounding box coordinates
+        - confidence: Detection confidence score
+        - object_type: Type of object detected
+        - caption: Associated caption text if found
+        - nearby_text: Text elements found near the diagram
     """
     diagrams = []
     
-    # In a real implementation, we would:
-    # 1. Use object detection to find diagram-like elements
-    # 2. Check text nearby for captions like "Figure X", "Diagram", etc.
-    # 3. Use layout analysis to identify technical drawings
+    # Extract text blocks and their locations
+    text_blocks = []
+    if text_annotation and text_annotation.pages:
+        for page in text_annotation.pages:
+            for block in page.blocks:
+                if not block.bounding_box:
+                    continue
+                    
+                # Get text content
+                text = ""
+                for paragraph in block.paragraphs:
+                    for word in paragraph.words:
+                        for symbol in word.symbols:
+                            text += symbol.text
+                
+                # Get bounding box
+                vertices = block.bounding_box.normalized_vertices
+                text_bbox = {
+                    "x1": vertices[0].x,
+                    "y1": vertices[0].y,
+                    "x2": vertices[2].x,
+                    "y2": vertices[2].y
+                }
+                
+                text_blocks.append({
+                    "text": text.strip(),
+                    "bbox": text_bbox
+                })
     
-    # Identify objects that might be diagrams (simplified)
+    # Identify potential diagram objects
     diagram_objects = [obj for obj in objects if _is_likely_diagram(obj)]
     
-    for i, obj in enumerate(diagram_objects):
+    for obj in diagram_objects:
         # Extract bounding box
         bbox = {
             "x1": obj.bounding_poly.normalized_vertices[0].x,
@@ -100,13 +146,27 @@ def identify_diagrams(
             "y2": obj.bounding_poly.normalized_vertices[2].y,
         }
         
-        # In production, we'd extract the actual image content
-        # For this example, we'll create a placeholder
+        # Find nearby text blocks
+        nearby_text = []
+        caption = None
+        
+        for text_block in text_blocks:
+            # Check if text is near the diagram
+            if _is_text_near_diagram(bbox, text_block["bbox"]):
+                text = text_block["text"].lower()
+                
+                # Check if this might be a caption
+                if _is_caption_text(text):
+                    caption = text_block["text"]
+                else:
+                    nearby_text.append(text_block["text"])
+        
         diagram = {
-            "image_content": b"placeholder_binary_content",  # In production: extract this region from image
             "bbox": bbox,
             "confidence": obj.score,
-            "object_type": obj.name
+            "object_type": obj.name,
+            "caption": caption,
+            "nearby_text": nearby_text
         }
         
         diagrams.append(diagram)
@@ -124,20 +184,97 @@ def _is_likely_diagram(obj: vision.LocalizedObjectAnnotation) -> bool:
     Returns:
         Boolean indicating if the object is likely a diagram
     """
-    # Simplified logic - in production, this would be more sophisticated
     diagram_related_objects = [
-        "diagram", "chart", "drawing", "graph", "figure", 
-        "blueprint", "schematic", "technical drawing"
+        "diagram", "chart", "drawing", "graph", "figure",
+        "blueprint", "schematic", "technical drawing", "flowchart",
+        "architecture", "system", "workflow", "process", "map"
     ]
     
-    # Check if object name is in our list
+    # Check object name against expanded list
     if any(term in obj.name.lower() for term in diagram_related_objects):
         return True
     
-    # Check confidence score (diagrams often have distinct boundaries)
-    if obj.score > 0.7:
-        # Additional checks could examine the shape, content, etc.
+    # Check confidence score and size
+    bbox = obj.bounding_poly.normalized_vertices
+    width = bbox[2].x - bbox[0].x
+    height = bbox[2].y - bbox[0].y
+    area = width * height
+    
+    # Diagrams typically have:
+    # 1. High confidence score
+    # 2. Significant size (not too small)
+    # 3. Reasonable aspect ratio (not extremely narrow)
+    if (obj.score > 0.6 and
+        area > 0.05 and  # At least 5% of image area
+        0.2 < (width / height) < 5  # Reasonable aspect ratio
+    ):
         return True
+        
+    return False
+
+
+def _is_text_near_diagram(diagram_bbox: Dict[str, float], text_bbox: Dict[str, float]) -> bool:
+    """
+    Determine if a text block is near a diagram.
+    
+    Args:
+        diagram_bbox: Diagram bounding box coordinates
+        text_bbox: Text block bounding box coordinates
+    
+    Returns:
+        Boolean indicating if the text is near the diagram
+    """
+    # Define proximity threshold (as fraction of diagram size)
+    PROXIMITY_THRESHOLD = 0.2
+    
+    # Calculate diagram dimensions
+    diagram_width = diagram_bbox["x2"] - diagram_bbox["x1"]
+    diagram_height = diagram_bbox["y2"] - diagram_bbox["y1"]
+    
+    # Calculate distances to text block
+    dx = min(abs(diagram_bbox["x2"] - text_bbox["x1"]),
+             abs(diagram_bbox["x1"] - text_bbox["x2"]))
+    dy = min(abs(diagram_bbox["y2"] - text_bbox["y1"]),
+             abs(diagram_bbox["y1"] - text_bbox["y2"]))
+    
+    # Text is near if it's within the threshold distance in either direction
+    return (dx <= PROXIMITY_THRESHOLD * diagram_width or
+            dy <= PROXIMITY_THRESHOLD * diagram_height)
+
+
+def _is_caption_text(text: str) -> bool:
+    """
+    Determine if text appears to be a diagram caption.
+    
+    Args:
+        text: The text to analyze
+    
+    Returns:
+        Boolean indicating if the text appears to be a caption
+    """
+    caption_indicators = [
+        "figure", "fig.", "fig", "diagram", "illustration",
+        "chart", "graph", "drawing", "schematic"
+    ]
+    
+    text_lower = text.lower()
+    
+    # Check for caption indicators at start of text
+    for indicator in caption_indicators:
+        if text_lower.startswith(indicator):
+            return True
+    
+    # Check for common caption patterns (e.g., "Figure 1:", "Fig. 1.2")
+    import re
+    caption_patterns = [
+        r"^(figure|fig\.?)\s*\d+[.:)]",
+        r"^diagram\s*\d+[.:)]",
+        r"^illustration\s*\d+[.:)]"
+    ]
+    
+    for pattern in caption_patterns:
+        if re.match(pattern, text_lower):
+            return True
     
     return False
 

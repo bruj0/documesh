@@ -32,59 +32,6 @@ vision_client = vision.ImageAnnotatorClient()
 storage_client = storage.Client()
 db = firestore.Client()
 
-
-def get_total_pages(file_path: str, mime_type: str) -> int:
-    """
-    Determines the total number of pages in a document based on its MIME type.
-    Args:
-        file_path: The path to the document file.
-        mime_type: The MIME type of the document (e.g., "application/pdf").
-    """
-    if mime_type == "application/pdf":
-        from PyPDF2 import PdfReader
-        try:
-            with open(file_path, "rb") as f:
-                reader = PdfReader(f)
-                return len(reader.pages)
-        except Exception as e:
-            print(f"Error reading PDF for page count: {e}")
-            return 0  # Or raise an error
-        print(
-            "WARNING: Page count determination is not implemented. "
-            "Assuming 1 page for this sample. You MUST implement this for multi-page processing."
-        )
-        return 1 # Replace with actual page count logic
-    else:
-        # For non-PDFs, Document AI's synchronous processing might handle them differently.
-        # Often, non-PDFs are treated as a single "page" or image.
-        # If batching is needed for other types, adjust logic accordingly.
-        print(f"Page count for mime_type {mime_type} defaults to 1.")
-        return 1
-
-def get_total_pages_from_gcs(bucket_name: str, file_name: str) -> int:
-    """
-    Determines the total number of pages in a document stored in Google Cloud Storage.
-    
-    Args:
-        bucket_name: The name of the GCS bucket
-        file_name: The name of the file in the bucket
-    Returns:
-        int: The total number of pages in the document
-    """
-    # Get the file from GCS
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(file_name)
-    
-    if not blob.exists():
-        raise FileNotFoundError(f"File {file_name} does not exist in bucket {bucket_name}.")
-    
-    file_content = blob.download_as_bytes()
-    
-    # Determine MIME type
-    mime_type = _get_mime_type(file_name)
-    
-    return get_total_pages(file_content, mime_type)
-
 def process_document(bucket_name: str, file_name: str) -> str:
     """
     Process a document uploaded to Cloud Storage.
@@ -111,42 +58,13 @@ def process_document(bucket_name: str, file_name: str) -> str:
 
     raw_document = documentai.RawDocument(content=image_content, mime_type=mime_type)
 
-    # Determine total pages (implement this function based on your document type)
-    total_pages = get_total_pages_from_gcs(bucket_name, file_name)
-    if total_pages == 0:
-        print("Could not determine page count or document is empty.")
-        return
-    
-    batch_size = 15  # Max pages per sync request with IndividualPageSelector for PDFs
-    text_content = []
-
-    print(f"Processing document with {total_pages} page(s) in batches of {batch_size}...")
-
-    for i in range(0, total_pages, batch_size):
-        start_page = i + 1
-        end_page = min(i + batch_size, total_pages)
-        pages_to_process = list(range(start_page, end_page + 1))
-
-        print(f"Processing pages: {pages_to_process}...")
-
-        process_options = documentai.ProcessOptions(
-            individual_page_selector=documentai.ProcessOptions.IndividualPageSelector(
-                pages=pages_to_process
-            )
-        )
-
-        request = documentai.ProcessRequest(
-            name=name,
-            raw_document=raw_document,
-            process_options=process_options,
-        )
-
-        result = client.process_document(request=request)
-        document = result.document
-        text_content.append(document.text)
-    
-    # Extract text content
-    text_content = "\n".join(text_content)
+    request = documentai.ProcessRequest(
+        name=name,
+        raw_document=raw_document,
+    )
+    result = client.process_document(request=request)
+    document = result.document
+    text_content = document.text
     
     # Process for diagrams if it's a PDF, image, etc.
     diagrams = []
@@ -173,7 +91,7 @@ def process_document(bucket_name: str, file_name: str) -> str:
         "filename": file_name,
         "source_bucket": bucket_name,
         "mime_type": mime_type,
-        "text_content": text_content,
+        "text_content": document,
         "text_embedding": text_embedding,
         "visual_embeddings": visual_embeddings,
         "diagram_count": len(diagrams),
@@ -184,11 +102,11 @@ def process_document(bucket_name: str, file_name: str) -> str:
         }
     }
     
-    # Store document data in Firestore
-    db.collection("documents").document(document_id).set(document_data)
+    # # Store document data in Firestore
+    # db.collection("documents").document(document_id).set(document_data)
     
-    # Store document embeddings in Vector Search
-    _store_embeddings_in_vector_search(document_id, text_embedding, visual_embeddings)
+    # # Store document embeddings in Vector Search
+    # _store_embeddings_in_vector_search(document_id, text_embedding, visual_embeddings)
     
     return document_id
 
@@ -264,7 +182,7 @@ def _store_embeddings_in_vector_search(
     # index = aiplatform.MatchingEngineIndex(index_name="your-index-name")
     # index.deploy()
     # index_endpoint = index.deploy_index(...)
-    # For now, we'll just log the action
-    print(f"Storing embeddings for document {document_id} in Vector Search")
-    print(f"Text embedding dimension: {len(text_embedding)}")
-    print(f"Number of visual embeddings: {len(visual_embeddings)}")
+    # # For now, we'll just log the action
+    # print(f"Storing embeddings for document {document_id} in Vector Search")
+    # print(f"Text embedding dimension: {len(text_embedding)}")
+    # print(f"Number of visual embeddings: {len(visual_embeddings)}")
