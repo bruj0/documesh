@@ -13,16 +13,18 @@ from google.cloud import documentai_v1 as documentai
 from google.cloud import vision_v1 as vision
 from google.cloud import storage
 from google.cloud import firestore
+from google.api_core.client_options import ClientOptions
 
 # Import local modules
 from . import embedding
 from . import vision as vision_processing
 
 # Environment variables and configuration
-PROJECT_ID = os.environ.get("PROJECT_ID", "your-project-id")
-LOCATION = os.environ.get("LOCATION", "us-central1")
-PROCESSOR_ID = os.environ.get("DOCUMENT_PROCESSOR_ID", "your-processor-id")
-BUCKET_NAME = os.environ.get("DOCUMENT_BUCKET", f"{PROJECT_ID}-technical-documents")
+PROJECT_ID = "hacker2025-team-5-dev"
+LOCATION = "eu"
+
+PROCESSOR_ID = "5b798e9bbfa51375"
+BUCKET_NAME = "example_bucket_airbus"  # Replace with your GCS bucket name
 
 # Initialize clients
 document_client = documentai.DocumentProcessorServiceClient()
@@ -30,6 +32,58 @@ vision_client = vision.ImageAnnotatorClient()
 storage_client = storage.Client()
 db = firestore.Client()
 
+
+def get_total_pages(file_path: str, mime_type: str) -> int:
+    """
+    Determines the total number of pages in a document based on its MIME type.
+    Args:
+        file_path: The path to the document file.
+        mime_type: The MIME type of the document (e.g., "application/pdf").
+    """
+    if mime_type == "application/pdf":
+        from PyPDF2 import PdfReader
+        try:
+            with open(file_path, "rb") as f:
+                reader = PdfReader(f)
+                return len(reader.pages)
+        except Exception as e:
+            print(f"Error reading PDF for page count: {e}")
+            return 0  # Or raise an error
+        print(
+            "WARNING: Page count determination is not implemented. "
+            "Assuming 1 page for this sample. You MUST implement this for multi-page processing."
+        )
+        return 1 # Replace with actual page count logic
+    else:
+        # For non-PDFs, Document AI's synchronous processing might handle them differently.
+        # Often, non-PDFs are treated as a single "page" or image.
+        # If batching is needed for other types, adjust logic accordingly.
+        print(f"Page count for mime_type {mime_type} defaults to 1.")
+        return 1
+
+def get_total_pages_from_gcs(bucket_name: str, file_name: str) -> int:
+    """
+    Determines the total number of pages in a document stored in Google Cloud Storage.
+    
+    Args:
+        bucket_name: The name of the GCS bucket
+        file_name: The name of the file in the bucket
+    Returns:
+        int: The total number of pages in the document
+    """
+    # Get the file from GCS
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(file_name)
+    
+    if not blob.exists():
+        raise FileNotFoundError(f"File {file_name} does not exist in bucket {bucket_name}.")
+    
+    file_content = blob.download_as_bytes()
+    
+    # Determine MIME type
+    mime_type = _get_mime_type(file_name)
+    
+    return get_total_pages(file_content, mime_type)
 
 def process_document(bucket_name: str, file_name: str) -> str:
     """
@@ -42,32 +96,62 @@ def process_document(bucket_name: str, file_name: str) -> str:
     Returns:
         document_id: The ID of the processed document
     """
-    # Log start of processing
-    print(f"Processing document: {file_name} from bucket: {bucket_name}")
-    
-    # Get document from Cloud Storage
+    opts = ClientOptions(api_endpoint=f"{LOCATION}-documentai.googleapis.com")
+    client = documentai.DocumentProcessorServiceClient(client_options=opts)
+    mime_type = _get_mime_type(file_name)
+
+    name = client.processor_path(PROJECT_ID, LOCATION, PROCESSOR_ID)
+
+    # Download and read the image content from GCS
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(file_name)
-    file_content = blob.download_as_bytes()
+    if not blob.exists():
+        raise FileNotFoundError(f"File {file_name} does not exist in bucket {bucket_name}.")
+    image_content = blob.download_as_bytes()
+
+    raw_document = documentai.RawDocument(content=image_content, mime_type=mime_type)
+
+    # Determine total pages (implement this function based on your document type)
+    total_pages = get_total_pages_from_gcs(bucket_name, file_name)
+    if total_pages == 0:
+        print("Could not determine page count or document is empty.")
+        return
     
-    # Get MIME type
-    mime_type = _get_mime_type(file_name)
-    
-    # Process with Document AI
-    processor_name = f"projects/{PROJECT_ID}/locations/{LOCATION}/processors/{PROCESSOR_ID}"
-    raw_document = documentai.RawDocument(content=file_content, mime_type=mime_type)
-    request = documentai.ProcessRequest(name=processor_name, raw_document=raw_document)
-    
-    result = document_client.process_document(request=request)
-    document = result.document
+    batch_size = 15  # Max pages per sync request with IndividualPageSelector for PDFs
+    text_content = []
+
+    print(f"Processing document with {total_pages} page(s) in batches of {batch_size}...")
+
+    for i in range(0, total_pages, batch_size):
+        start_page = i + 1
+        end_page = min(i + batch_size, total_pages)
+        pages_to_process = list(range(start_page, end_page + 1))
+
+        print(f"Processing pages: {pages_to_process}...")
+
+        process_options = documentai.ProcessOptions(
+            individual_page_selector=documentai.ProcessOptions.IndividualPageSelector(
+                pages=pages_to_process
+            )
+        )
+
+        request = documentai.ProcessRequest(
+            name=name,
+            raw_document=raw_document,
+            process_options=process_options,
+        )
+
+        result = client.process_document(request=request)
+        document = result.document
+        text_content.append(document.text)
     
     # Extract text content
-    text_content = document.text
+    text_content = "\n".join(text_content)
     
     # Process for diagrams if it's a PDF, image, etc.
     diagrams = []
     if mime_type in ["application/pdf", "image/jpeg", "image/png", "image/tiff"]:
-        diagrams = extract_diagrams_with_vision(file_content, mime_type)
+        diagrams = extract_diagrams_with_vision(image_content, mime_type)
     
     # Generate embeddings for text and diagrams
     text_embedding = embedding.generate_text_embedding(text_content)
