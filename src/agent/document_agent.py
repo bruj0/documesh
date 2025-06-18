@@ -392,11 +392,14 @@ class DocumentSearchAgent:
         if aspects and len(aspects) > 0:
             aspects_str = "Focus on comparing these aspects: " + ", ".join(aspects)
         
+        # Join document excerpts with newlines
+        doc_excerpts_text = "\n\n".join(doc_excerpts)        
+        
         # Create prompt for comparison
         prompt = f"""
         Compare the following technical documents:
         
-        {"\n\n".join(doc_excerpts)}
+        {doc_excerpts_text}
         
         {aspects_str}
         

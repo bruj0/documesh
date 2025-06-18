@@ -43,10 +43,20 @@ resource "google_storage_bucket" "function_bucket" {
   lifecycle {
     create_before_destroy = false
     prevent_destroy       = false
-    ignore_changes        = []
+    #ignore_changes        = []
   }
   versioning {
     enabled = true
   }
-
+  lifecycle_rule {
+    action {
+      type = "Delete"
+    }
+    condition {
+      age                   = 60
+      matches_prefix        = []
+      matches_storage_class = []
+      matches_suffix        = []
+    }
+  }
 }

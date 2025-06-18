@@ -5,7 +5,7 @@
 resource "google_cloudfunctions_function" "document_processor" {
   name        = "document-processor"
   description = "Function to process and analyze documents"
-  runtime     = "python310"
+  runtime     = "python312"
 
   available_memory_mb   = 1024
   source_archive_bucket = google_storage_bucket.function_bucket.name

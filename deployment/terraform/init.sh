@@ -87,6 +87,11 @@ else
     echo "Service account key created: $KEY_FILE"
 fi
 
+mkdir /tmp/function
+cp -r ../../src /tmp/function/
+cp ../../requirements.txt /tmp/function/
+zip -r function-source.zip /tmp/function
+
 echo "========================================================================"
 echo "Setup completed successfully!"
 echo "Service account: $SERVICE_ACCOUNT_EMAIL"

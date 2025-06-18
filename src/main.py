@@ -2,12 +2,18 @@
 Cloud Function for document processing.
 """
 import functions_framework
-from google.cloud import storage
+import sys
 import os
-import json
+
+# Add the current directory to Python path for imports
+sys.path.insert(0, os.path.dirname(__file__))
 
 # Import document processor
-from src.ingestion.processor import process_document
+try:
+    from ingestion.processor import process_document
+except ImportError:
+    # Fallback for different deployment environments
+    from src.ingestion.processor import process_document
 
 
 @functions_framework.cloud_event

@@ -17,12 +17,12 @@ resource "google_service_account" "api_service_sa" {
 # IAM policy bindings for the API service account
 resource "google_project_iam_member" "api_service_roles" {
   for_each = toset([
-    "roles/storage.objectViewer",          # Access to read documents from storage
-    "roles/storage.objectCreator",         # Ability to upload new documents
-    "roles/documentai.admin",               # Use Document AI processors
-    "roles/aiplatform.admin",               # Access to Vertex AI for vector search
-    "roles/datastore.owner",              # rw Firestore data
-    "roles/pubsub.admin",               # Publish messages to topics
+    "roles/storage.objectViewer",  # Access to read documents from storage
+    "roles/storage.objectCreator", # Ability to upload new documents
+    "roles/documentai.admin",      # Use Document AI processors
+    "roles/aiplatform.admin",      # Access to Vertex AI for vector search
+    "roles/datastore.owner",       # rw Firestore data
+    "roles/pubsub.admin",          # Publish messages to topics
     "roles/cloudfunctions.admin",
     "roles/run.admin",
     "roles/iam.serviceAccountUser",
@@ -37,7 +37,7 @@ resource "google_project_iam_member" "api_service_roles" {
 # IAM policy bindings for the Cloud Build service account
 resource "google_project_iam_member" "cloudbuild_sa_roles" {
   for_each = toset([
-    
+
     "roles/artifactregistry.admin",
     "roles/cloudbuild.builds.builder",
     "roles/secretmanager.secretAccessor", # For accessing GitHub tokens if needed
