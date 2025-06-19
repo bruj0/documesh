@@ -14,9 +14,13 @@ from google.cloud import vision_v1 as vision
 from google.cloud import storage
 from google.cloud import firestore
 from google.api_core.client_options import ClientOptions
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_text_splitters import MarkdownHeaderTextSplitter
+from langchain_core.documents import Document
+from langchain_google_vertexai import VertexAIEmbeddings
+from langchain_chroma import Chroma
 
-# Import local modules
-from . import embedding
+
 from . import vision as vision_processing
 
 # Environment variables and configuration
@@ -64,51 +68,37 @@ def process_document(bucket_name: str, file_name: str) -> str:
     )
     result = client.process_document(request=request)
     document = result.document
-    text_content = document.text
-    
-    # Process for diagrams if it's a PDF, image, etc.
-    diagrams = []
-    if mime_type in ["application/pdf", "image/jpeg", "image/png", "image/tiff"]:
-        diagrams = extract_diagrams_with_vision(image_content, mime_type)
-    
-    # Generate embeddings for text and diagrams
-    text_embedding = embedding.generate_text_embedding(text_content)
-    
-    visual_embeddings = []
-    for diagram in diagrams:
-        visual_embedding = embedding.generate_visual_embedding(diagram["image_content"])
-        visual_embeddings.append({
-            "embedding": visual_embedding,
-            "page": diagram.get("page", 0),
-            "bbox": diagram.get("bbox", {})
-        })
-    
     # Create document record
     document_id = f"doc-{datetime.now().strftime('%Y%m%d%H%M%S')}-{os.urandom(4).hex()}"
-    
     document_data = {
         "document_id": document_id,
         "filename": file_name,
         "source_bucket": bucket_name,
         "mime_type": mime_type,
-        "text_content": document,
-        "text_embedding": text_embedding,
-        "visual_embeddings": visual_embeddings,
-        "diagram_count": len(diagrams),
+        "text_content": document.text,
+        # "text_embedding": text_embedding,
+        # "visual_embeddings": visual_embeddings,
+        # "diagram_count": len(diagrams), # TO-DO -> First we implement the workflow for text extraction
         "processed_at": firestore.SERVER_TIMESTAMP,
         "metadata": {
             "source": file_name,
             "pages": document.pages,
         }
     }
+
+    import vertexai
+    vertexai.init(project=PROJECT_ID, location="us-central1")
+    embeddings = VertexAIEmbeddings(model_name="text-embedding-004")
+
+    splitted_docs = split_docs(docs=[Document(page_content=document.text)])
+    vector_store = Chroma(
+        collection_name="foo",
+        embedding_function=embeddings,
+        # other params...
+    )
+    vector_store.add_documents(documents=splitted_docs, ids=[str(i) for i in range(1, len(splitted_docs)+1)])
     
-    # # Store document data in Firestore
-    # db.collection("documents").document(document_id).set(document_data)
-    
-    # # Store document embeddings in Vector Search
-    # _store_embeddings_in_vector_search(document_id, text_embedding, visual_embeddings)
-    
-    return document_id
+    return vector_store, document_id
 
 
 def extract_diagrams_with_vision(file_content: bytes, mime_type: str) -> List[Dict[str, Any]]:
@@ -158,31 +148,29 @@ def _get_mime_type(filename: str) -> str:
     return mime_map.get(ext, "application/octet-stream")
 
 
-def _store_embeddings_in_vector_search(
-    document_id: str,
-    text_embedding: List[float],
-    visual_embeddings: List[Dict[str, Any]]
-) -> None:
-    """
-    Store document embeddings in Vertex AI Vector Search.
-    
-    Args:
-        document_id: The document ID
-        text_embedding: The text embedding vector
-        visual_embeddings: A list of visual embedding vectors with metadata
-    """
-    # This function would use the MatchingEngine API to store embeddings
-    # Implementation depends on how your Vector Search index is set up
-    from google.cloud import aiplatform
-    
-    # Initialize Vertex AI
-    aiplatform.init(project=PROJECT_ID, location=LOCATION)
-    
-    # In a real implementation, you'd use code like:
-    # index = aiplatform.MatchingEngineIndex(index_name="your-index-name")
-    # index.deploy()
-    # index_endpoint = index.deploy_index(...)
-    # # For now, we'll just log the action
-    # print(f"Storing embeddings for document {document_id} in Vector Search")
-    # print(f"Text embedding dimension: {len(text_embedding)}")
-    # print(f"Number of visual embeddings: {len(visual_embeddings)}")
+def split_docs(docs):
+    # Markdown
+    headers_to_split_on = [
+        ("#", "Title 1"),
+        ("##", "Sub-title 1"),
+        ("###", "Sub-title 2"),
+    ]
+    markdown_splitter = MarkdownHeaderTextSplitter(
+        headers_to_split_on=headers_to_split_on
+    )
+    # Split based on markdown and add original metadata
+    md_docs = []
+    for doc in docs:
+        md_doc = markdown_splitter.split_text(doc.page_content)
+        for i in range(len(md_doc)):
+            md_doc[i].metadata = md_doc[i].metadata | doc.metadata
+        md_docs.extend(md_doc)
+    # RecursiveTextSplitter
+    # Chunk size big enough
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=512,
+        chunk_overlap=20,
+        separators=["\n\n", "\n", r"(?<=\. )", " ", ""],
+    )
+    splitted_docs = splitter.split_documents(md_docs)
+    return splitted_docs
