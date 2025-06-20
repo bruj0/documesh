@@ -90,7 +90,7 @@ def process_document(bucket_name: str, file_name: str) -> str:
     vertexai.init(project=PROJECT_ID, location="us-central1")
     embeddings = VertexAIEmbeddings(model_name="text-embedding-004")
 
-    splitted_docs = split_docs(docs=[Document(page_content=document.text, mime_type=mime_type, metadata=document_data)])
+    splitted_docs = split_docs(docs=[Document(page_content=document.text, mime_type=mime_type)])
     vector_store = Chroma(
         collection_name="documents",
         embedding_function=embeddings,
