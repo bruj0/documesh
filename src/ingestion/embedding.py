@@ -1,6 +1,8 @@
 """
 Module for generating vector embeddings for text and visual content.
+Includes adapter classes for ChromaDB compatibility.
 """
+from chromadb import Documents, EmbeddingFunction, Embeddings
 from typing import List, Dict, Any, Optional
 import os
 
@@ -14,32 +16,6 @@ from google.genai import Client
 PROJECT_ID = os.environ.get("PROJECT_ID","hacker2025-team-5-dev")
 LOCATION = os.environ.get("LOCATION", "us-central1")
 TEXT_EMBEDDING_MODEL = os.environ.get("TEXT_EMBEDDING_MODEL","gemini-embedding-001")
-# MULTIMODAL_MODEL = os.environ.get("MULTIMODAL_MODEL","gemini-vision-001")
-
-# import vertexai
-
-# from vertexai.vision_models import Image, MultiModalEmbeddingModel
-
-# # TODO(developer): Update & uncomment line below
-# # PROJECT_ID = "your-project-id"
-# vertexai.init(project=PROJECT_ID, location="us-central1")
-
-# # TODO(developer): Try different dimenions: 128, 256, 512, 1408
-# embedding_dimension = 128
-
-# model = MultiModalEmbeddingModel.from_pretrained("imagetextmodel@001")
-# image = Image.load_from_file(
-#     "gs://cloud-samples-data/vertex-ai/llm/prompts/landmark1.png"
-# )
-
-# embeddings = model.get_embeddings(
-#     image=image,
-#     contextual_text="Colosseum",
-#     dimension=embedding_dimension,
-# )
-
-# print(f"Image Embedding: {embeddings.image_embedding}")
-# print(f"Text Embedding: {embeddings.text_embedding}")
 
 def generate_text_embedding(text: str) -> List[float]:
     """
@@ -64,7 +40,7 @@ def generate_text_embedding(text: str) -> List[float]:
         ),
     )
     
-    print(response)
+    return response.embeddings[0].values if response.embeddings else []
 
 
 def generate_visual_embedding(image_content: bytes) -> List[float]:
