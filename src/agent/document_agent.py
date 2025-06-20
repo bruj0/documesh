@@ -6,14 +6,16 @@ from typing import Dict, List, Any, Optional
 
 # Import Google ADK components
 from google.adk.agents import Agent
-from google.adk.tools import FunctionTool
+from google.adk.tools import FunctionTool as Tool
 
 # Import local modules
 from ..search import similarity
 
 # Configure environment
-PROJECT_ID = os.environ.get("PROJECT_ID", "your-project-id")
-LOCATION = os.environ.get("LOCATION", "us-central1")
+# PROJECT_ID = os.environ.get("PROJECT_ID", "your-project-id")
+PROJECT_ID = "hacker2025-team-5-dev"
+# LOCATION = os.environ.get("LOCATION", "us-central1")
+LOCATION = "europe-west4-a"
 
 class DocumentSearchAgent:
     """Agent for document search and information extraction using Google ADK."""
@@ -21,21 +23,21 @@ class DocumentSearchAgent:
     def __init__(self):
         """Initialize the document search agent."""
         # Define custom tools
-        self.search_tool = FunctionTool(self._search_documents)
-        self.search_tool.name = "search_documents"
-        self.search_tool.description = "Search for technical documents by text query"
+        self.search_tool = Tool(
+            func=self._search_documents
+        )
         
-        self.similar_docs_tool = FunctionTool(self._find_similar_documents)
-        self.similar_docs_tool.name = "find_similar_documents"
-        self.similar_docs_tool.description = "Find documents similar to a specified document"
+        self.similar_docs_tool = Tool(
+            func=self._find_similar_documents
+        )
         
-        self.extract_info_tool = FunctionTool(self._extract_information)
-        self.extract_info_tool.name = "extract_document_information"
-        self.extract_info_tool.description = "Extract specific information from a document"
+        self.extract_info_tool = Tool(
+            func=self._extract_information
+        )
         
-        self.summarize_tool = FunctionTool(self._summarize_document)
-        self.summarize_tool.name = "summarize_document"
-        self.summarize_tool.description = "Generate a summary of a document"
+        self.summarize_tool = Tool(
+            func=self._summarize_document
+        )
         
         # Initialize the agent with tools
         self.agent = Agent(

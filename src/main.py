@@ -42,7 +42,7 @@ def document_processor(cloud_event):
     
     try:
         # Process document
-        document_id = process_document(bucket_name, file_name)
+        _, document_id = process_document(bucket_name, file_name)
         print(f"Document processed successfully. Document ID: {document_id}")
         
         return {"document_id": document_id, "status": "success"}

@@ -79,7 +79,7 @@ async def upload_document(
         # Process document in a separate background task
         # In a real-world application, we would trigger a Cloud Function or Pub/Sub
         # For this demo, we'll process directly
-        document_id = processor.process_document(bucket_name, blob_name)
+        _, document_id = processor.process_document(bucket_name, blob_name)
         
         return {
             "document_id": document_id,
