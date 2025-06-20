@@ -96,7 +96,7 @@ def test_process_document(mock_document_bytes, mock_document_ai_response, mock_v
         mock_urandom.return_value = b'\xaa\xbb\xcc\xdd'
         
         # Run the function
-        document_id = processor.process_document("test-bucket", "test-doc.pdf")
+        _, document_id = processor.process_document("test-bucket", "test-doc.pdf")
         
         # Check that document_id is returned
         assert document_id is not None

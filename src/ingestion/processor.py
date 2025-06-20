@@ -19,6 +19,7 @@ from langchain_text_splitters import MarkdownHeaderTextSplitter
 from langchain_core.documents import Document
 from langchain_google_vertexai import VertexAIEmbeddings
 from langchain_chroma import Chroma
+import vertexai
 
 
 from . import vision as vision_processing
@@ -86,13 +87,12 @@ def process_document(bucket_name: str, file_name: str) -> str:
         }
     }
 
-    import vertexai
     vertexai.init(project=PROJECT_ID, location="us-central1")
     embeddings = VertexAIEmbeddings(model_name="text-embedding-004")
 
-    splitted_docs = split_docs(docs=[Document(page_content=document.text)])
+    splitted_docs = split_docs(docs=[Document(page_content=document.text, mime_type=mime_type, metadata=document_data)])
     vector_store = Chroma(
-        collection_name="foo",
+        collection_name="documents",
         embedding_function=embeddings,
         # other params...
     )
