@@ -26,7 +26,6 @@ graph TD
     CF -->|Store Metadata| FS[Firestore]
     CF -->|Index Vectors| VIS[Vector Index Service]
     
-    API -->|Query| DES[Discovery Engine Search]
     API -->|Query| VIS
     API -->|Retrieve Metadata| FS
     API -->|Retrieve Documents| GCS
@@ -40,10 +39,6 @@ graph TD
         DAI
         VAI
         VIS
-    end
-    
-    subgraph "Search Services"
-        DES
     end
     
     subgraph "Compute Services"
