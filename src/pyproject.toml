@@ -1,0 +1,18 @@
+[project]
+name = "Documesh"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "google-auth>=2.40.3",
+    "google-cloud-firestore>=2.21.0",
+    "langchain>=0.3.26",
+    "langchain-community>=0.3.26",
+    "langchain-google-vertexai>=2.0.26",
+    "numpy>=2.3.1",
+    "pandas>=2.3.0",
+    "python-dotenv>=1.1.0",
+    "sentence-transformers>=4.1.0",
+    "streamlit>=1.46.0",
+]

@@ -110,14 +110,14 @@ When a new document is added:
 3. Deploy infrastructure with Terraform:
    ```bash
    cd deployment/terraform
-   terraform init
-   terraform apply
+   tofu init
+   tofu apply
    ```
 
 4. Deploy the Cloud Functions:
    ```bash
    gcloud functions deploy document-processor \
-     --runtime python39 \
+     --runtime python312 \
      --trigger-bucket=YOUR_BUCKET_NAME \
      --entry-point=process_document
    ```
@@ -178,6 +178,3 @@ The system includes an Agent Development Kit (ADK) integration that enables natu
 - Extract specific information from documents
 - Provide summaries and insights from technical content
 - Help navigate complex technical documentation
-
-## Contributing
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.

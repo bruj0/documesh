@@ -7,13 +7,14 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # Copy requirements first to leverage Docker cache
-COPY requirements.txt ./
+COPY ./src/requirements.txt ./
+COPY ./credentials ./credentials
+COPY ./src/.env ./.env
+# Copy the application code
+COPY ./src/document-management-ui ./document-management-ui
 
 # Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy the application code
-COPY . ./
+RUN pip install --no-cache-dir -r ./requirements.txt
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
@@ -22,4 +23,4 @@ ENV PYTHONUNBUFFERED=1 \
 EXPOSE 8080
 
 # Run the FastAPI app with Uvicorn
-CMD exec uvicorn src.api.main:app --host 0.0.0.0 --port $PORT
+CMD exec streamlit run --server.headless true --server.address 0.0.0.0 --server.port $PORT ./document-management-ui/streamlit.py

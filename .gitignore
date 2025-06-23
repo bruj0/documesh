@@ -22,7 +22,7 @@ wheels/
 venv/
 env/
 .env/
-
+.env
 # Terraform
 .terraform/
 *.tfstate

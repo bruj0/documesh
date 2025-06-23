@@ -11,24 +11,27 @@ The infrastructure is designed to support a comprehensive document management wo
 3. **Vector Indexing**: Documents are embedded using Vertex AI models and stored in both text and visual Vertex AI Vector Search indices.
 4. **Search and Retrieval**: A Cloud Run API service provides interfaces for document search and retrieval.
 5. **Metadata Storage**: Document metadata is stored in Firestore for efficient retrieval.
-
+6. **Similarity Search Agent**: In charge of finding similar diagramas and images
+7. 
 ## Architecture Diagram
 
 ```mermaid
 graph TD
-    Client[Client Application] -->|Upload Documents| GCS[Cloud Storage]
-    Client -->|Search & Retrieve| API[Cloud Run API]
+    Client[User] -->|Upload Documents| GCS[Cloud Storage]
+    Client -->|Search & Retrieve| API[Cloud Run App ]
     
-    GCS -->|Trigger| CF[Cloud Function]
+    GCS -->|Trigger| CF[Cloud Functions]
     CF -->|Process| DAI[Document AI]
-    CF -->|Extract Text| DAI
+    CF -->|Extract Text & Images| DAI
     CF -->|Generate Embeddings| VAI[Vertex AI Embeddings]
     CF -->|Store Metadata| FS[Firestore]
     CF -->|Index Vectors| VIS[Vector Index Service]
     
     API -->|Query| VIS
     API -->|Retrieve Metadata| FS
-    API -->|Retrieve Documents| GCS
+    API -->|Images and Diagramas search| AGN
+
+    AGN[Similarity Agent] --> FS  
 
     subgraph "Data Storage"
         GCS
@@ -39,9 +42,10 @@ graph TD
         DAI
         VAI
         VIS
+        AGN
     end
     
-    subgraph "Compute Services"
+    subgraph "Document Management UI"
         CF
         API
     end
@@ -65,19 +69,16 @@ graph TD
    - Text Embedding Model: textembedding-gecko
    - Multimodal Embedding Model: multimodalembedding
 
-4. **Discovery Engine**
-   - Document Datastore: Provides advanced search capabilities for technical documents
-
-5. **Firestore**
+4. **Firestore**
    - Document Metadata: Stores document metadata and relationships in Firestore Native database
 
-6. **Cloud Functions**
+5. **Cloud Functions**
    - Document Processor: Triggered when documents are uploaded to Cloud Storage for processing
 
-7. **Cloud Run**
-   - API Service: Provides RESTful API for interacting with the document management system
+6. **Cloud Run**
+   - UI Service: Provides an UI for interacting with the document management system
 
-8. **Artifact Registry**
+7. **Artifact Registry**
    - Document API Repository: Stores container images for the Cloud Run API service
 
 ## Deployment

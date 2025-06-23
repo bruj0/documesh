@@ -1,0 +1,18 @@
+# Core LangChain and AI
+langchain
+langchain-google-vertexai
+langchain-community
+# Web interface
+streamlit
+
+# Environment management
+python-dotenv
+
+# Data processing
+numpy
+pandas
+sentence-transformers
+
+# Google Cloud services
+google-cloud-firestore
+google-auth
