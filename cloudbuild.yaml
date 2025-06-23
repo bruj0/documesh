@@ -64,9 +64,12 @@ steps:
       - 'gs://${_PROJECT_ID}-functions/function-source.zip'
 
 secrets:
-  - secretEnv:
-      SERVICE_ACCOUNT_JSON: projects/$PROJECT_ID/secrets/service-account-json/versions/latest
-      ENV_FILE: projects/$PROJECT_ID/secrets/env-file/versions/latest
+  - id: service-account-json
+    secretEnv:
+      SERVICE_ACCOUNT_JSON: service-account-json
+  - id: env-file
+    secretEnv:
+      ENV_FILE: env-file
 
 substitutions:
   _REGION: 'eu-west1'  # Matching the GitHub connection region
