@@ -18,8 +18,8 @@ steps:
       - '-c'
       - |
         mkdir -p credentials
-        echo "$SERVICE_ACCOUNT_JSON" > credentials/service-account.json
-        echo "$ENV_FILE" > src/.env      
+        echo "$$SERVICE_ACCOUNT_JSON" > credentials/service-account.json
+        echo "$$ENV_FILE" > src/.env      
         docker buildx create --use --name multiarch-builder
         docker buildx build --platform linux/arm64,linux/amd64 \
           -t ${_REGION}-docker.pkg.dev/$PROJECT_ID/document-api/document-api:$SHORT_SHA \
@@ -74,7 +74,6 @@ secrets:
 substitutions:
   _REGION: 'eu-west1'  # Matching the GitHub connection region
   _PROJECT_ID: '${PROJECT_ID}'
-# _SERVICE_ACCOUNT: 'cloudbuild-sa@${PROJECT_ID}.iam.gserviceaccount.com'
 
 images:
   - '${_REGION}-docker.pkg.dev/$PROJECT_ID/document-api/document-api:$SHORT_SHA'
