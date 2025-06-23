@@ -6,7 +6,7 @@ steps:
     args:
       - '-c'
       - |
-        pip install -r requirements.txt
+        pip install -r ./src/requirements.txt
         pip install pytest
         python -m pytest tests/ -v || true  # Don't fail the build if tests fail for now
   
@@ -47,8 +47,7 @@ steps:
       - |
         apt-get update && apt-get install -y zip
         mkdir -p /workspace/function
-        cp -r src /workspace/function/
-        cp requirements.txt /workspace/function/
+        cp -r src/functions /workspace/function/
         cd /workspace/function
         zip -r /workspace/function-source.zip .
 
