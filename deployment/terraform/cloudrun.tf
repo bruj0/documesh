@@ -38,15 +38,10 @@ resource "google_cloud_run_service" "api_service" {
           value = google_vertex_ai_index.visual_index.id
         }
 
-        env {
-          name  = "DATA_STORE_ID"
-          value = google_discovery_engine_data_store.document_store.data_store_id
-        }
-
         resources {
           limits = {
             cpu    = "1000m"
-            memory = "512Mi"
+            memory = "2048Mi"
           }
         }
       }

@@ -49,6 +49,31 @@ variable "documentai_location" {
   default     = "eu" # Using EU region for Document AI
 }
 
+# Vector Search configuration variables
+variable "vector_search_dimensions" {
+  description = "Dimensions for the vector embeddings"
+  type        = number
+  default     = 768 # Default for textembedding-gecko@003
+}
+
+variable "vector_search_neighbors_count" {
+  description = "Approximate number of neighbors for vector search"
+  type        = number
+  default     = 150
+}
+
+variable "vector_search_min_replicas" {
+  description = "Minimum number of replicas for vector search endpoints"
+  type        = number
+  default     = 1
+}
+
+variable "vector_search_max_replicas" {
+  description = "Maximum number of replicas for vector search endpoints"
+  type        = number
+  default     = 2
+}
+
 variable "github_repo" {
   description = "GitHub repository for the application"
   type        = string
