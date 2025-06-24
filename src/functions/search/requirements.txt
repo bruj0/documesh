@@ -1,0 +1,10 @@
+# Google Cloud dependencies
+google-cloud-firestore>=2.11.0
+google-cloud-aiplatform>=1.38.0
+
+# LangChain dependencies
+langchain>=0.1.0
+langchain-google-vertexai>=0.1.0
+
+# Additional utilities
+functions-framework>=3.0.0
